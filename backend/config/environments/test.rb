@@ -11,9 +11,6 @@ Rails.application.configure do
   # Set a secret key base for tests
   config.secret_key_base = "test_secret_key_base_for_jwt_testing"
 
-  # Set JWT secret key for tests
-  ENV["JWT_SECRET_KEY"] = "test_jwt_secret_key_for_testing_purposes_only"
-
   # While tests run files are not watched, reloading is not necessary.
   config.enable_reloading = false
 

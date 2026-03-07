@@ -3,17 +3,8 @@ class AuthService
   class TokenExpiredError < StandardError; end
   class TokenInvalidError < StandardError; end
 
-  # Use environment variable for JWT secret key
-  # In production: require JWT_SECRET_KEY to be set
-  # In development/test: fall back to Rails secret_key_base or fallback
-  SECRET_KEY = if Rails.env.production?
-                 ENV.fetch("JWT_SECRET_KEY") do
-                   raise ArgumentError, "JWT_SECRET_KEY environment variable is not set in production"
-                 end
-  else
-                 ENV["JWT_SECRET_KEY"] || Rails.application.credentials.secret_key_base || "dev_fallback_secret_key"
-  end
-
+  # Use Rails secret_key_base for JWT signing
+  SECRET_KEY = Rails.application.secret_key_base || "fallback_secret_key_for_development"
   TOKEN_EXPIRATION = 24.hours
 
   def self.authenticate(email, password)
