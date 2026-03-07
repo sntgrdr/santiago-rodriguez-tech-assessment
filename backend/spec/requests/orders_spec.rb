@@ -1,19 +1,34 @@
 require 'rails_helper'
 
 RSpec.describe "Orders API", type: :request do
-  let!(:person) { create(:person, password: 'password123') }
+  let!(:admin) { create(:person, role: :admin, password: 'password123') }
+  let!(:person) { create(:person, role: :customer, password: 'password123') }
+  let!(:other_person) { create(:person, role: :customer, password: 'password123') }
+
   let!(:order1) { create(:order, person: person, status: 'pending', total_amount: 100.00) }
   let!(:order2) { create(:order, person: person, status: 'confirmed', total_amount: 200.00) }
-  let!(:other_person) { create(:person, password: 'password123') }
+
   let!(:other_order) { create(:order, person: other_person, status: 'pending', total_amount: 50.00) }
 
   describe "GET /api/v1/orders" do
-    it "returns current user's orders only" do
-      get "/api/v1/orders", headers: auth_headers(person), as: :json
+    context "as a customer" do
+      it "returns current user's orders only" do
+        get "/api/v1/orders", headers: auth_headers(person), as: :json
 
-      expect(response).to have_http_status(:ok)
-      expect(json.size).to eq(2)
-      expect(json.map { |o| o['id'] }).to contain_exactly(order1.id, order2.id)
+        expect(response).to have_http_status(:ok)
+        expect(json.size).to eq(2)
+        expect(json.map { |o| o['id'] }).to contain_exactly(order1.id, order2.id)
+      end
+    end
+
+    context "as an admin" do
+      it "returns all orders from all users" do
+        get "/api/v1/orders", headers: auth_headers(admin), as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json.size).to eq(3)
+        expect(json.map { |o| o['id'] }).to include(order1.id, order2.id, other_order.id)
+      end
     end
 
     it "returns unauthorized without authentication" do
@@ -30,9 +45,15 @@ RSpec.describe "Orders API", type: :request do
       expect(json['id']).to eq(order1.id)
     end
 
-    it "returns not found for other user's order" do
+    it "returns not found for other user's order if requested by customer" do
       get "/api/v1/orders/#{other_order.id}", headers: auth_headers(person), as: :json
       expect(response).to have_http_status(:not_found)
+    end
+
+    it "allows admin to see any order" do
+      get "/api/v1/orders/#{other_order.id}", headers: auth_headers(admin), as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json['id']).to eq(other_order.id)
     end
   end
 
@@ -51,22 +72,48 @@ RSpec.describe "Orders API", type: :request do
   end
 
   describe "PUT /api/v1/orders/:id" do
-    it "updates current user's order" do
-      update_params = { order: { status: 'confirmed' } }
+    context "as an admin" do
+      it "updates any user's order" do
+        update_params = { order: { status: 'confirmed' } }
+        put "/api/v1/orders/#{order1.id}", params: update_params, headers: auth_headers(admin), as: :json
 
-      put "/api/v1/orders/#{order1.id}", params: update_params, headers: auth_headers(person), as: :json
+        expect(response).to have_http_status(:ok)
+        expect(json['status']).to eq('confirmed')
+      end
+    end
 
-      expect(response).to have_http_status(:ok)
-      expect(json['status']).to eq('confirmed')
+    context "as a customer" do
+      it "returns forbidden when trying to update" do
+        update_params = { order: { status: 'confirmed' } }
+        put "/api/v1/orders/#{order1.id}", params: update_params, headers: auth_headers(person), as: :json
+
+        expect(response).to have_http_status(:forbidden)
+      end
     end
   end
 
   describe "DELETE /api/v1/orders/:id" do
-    it "deletes current user's order" do
-      delete "/api/v1/orders/#{order1.id}", headers: auth_headers(person), as: :json
+    context "as an admin" do
+      it "deletes a pending order" do
+        delete "/api/v1/orders/#{order1.id}", headers: auth_headers(admin), as: :json
 
-      expect(response).to have_http_status(:no_content)
-      expect(Order.find_by(id: order1.id)).to be_nil
+        expect(response).to have_http_status(:no_content)
+        expect(Order.find_by(id: order1.id)).to be_nil
+      end
+
+      it "returns error when deleting a non-pending order" do
+        delete "/api/v1/orders/#{order2.id}", headers: auth_headers(admin), as: :json
+
+        expect(response).to have_http_status(:no_content)
+        expect(Order.find_by(id: order2.id)).not_to be_nil
+      end
+    end
+
+    context "as a customer" do
+      it "returns forbidden when trying to delete" do
+        delete "/api/v1/orders/#{order1.id}", headers: auth_headers(person), as: :json
+        expect(response).to have_http_status(:forbidden)
+      end
     end
   end
 end

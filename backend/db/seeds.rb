@@ -1,40 +1,65 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
-#
-# Example:
-#
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
+# db/seeds.rb
 
-# Create seed data for development
-# Create first person
-person1 = Person.find_or_create_by!(email: 'john.doe@example.com') do |person|
-  person.first_name = 'John'
-  person.last_name = 'Doe'
-  person.password = 'password123'
-  person.password_confirmation = 'password123'
+puts "Cleaning database..."
+# Opcional: Descomenta la línea de abajo si quieres empezar de cero cada vez
+# Order.destroy_all && Person.destroy_all
+
+# 1. Create Admin
+admin = Person.find_or_create_by!(email: 'admin@example.com') do |p|
+  p.first_name = 'Super'
+  p.last_name = 'Admin'
+  p.password = 'password123'
+  p.password_confirmation = 'password123'
+  p.role = :admin
+end
+puts "Created Admin: #{admin.email}"
+
+# 2. Create 3 Customers
+customers_data = [
+  { email: 'john.doe@example.com', first_name: 'John', last_name: 'Doe' },
+  { email: 'jane.smith@example.com', first_name: 'Jane', last_name: 'Smith' },
+  { email: 'santi.rodriguez@example.com', first_name: 'Santi', last_name: 'Rodriguez' }
+]
+
+customers_data.each do |data|
+  customer = Person.find_or_create_by!(email: data[:email]) do |p|
+    p.first_name = data[:first_name]
+    p.last_name = data[:last_name]
+    p.password = 'password123'
+    p.password_confirmation = 'password123'
+    p.role = :customer
+  end
+  puts "Created Customer: #{customer.email}"
+
+  # 3. Create 3 orders per customer (2 pending, 1 confirmed/shipped)
+
+  # Pending Order 1
+  Order.find_or_create_by!(number: "ORD-#{customer.first_name.upcase}-P1") do |o|
+    o.person = customer
+    o.status = 'pending'
+    o.total_amount = rand(100.0..500.0).round(2)
+    o.order_date = Date.current
+    o.notes = "First pending order for #{customer.first_name}"
+  end
+
+  # Pending Order 2
+  Order.find_or_create_by!(number: "ORD-#{customer.first_name.upcase}-P2") do |o|
+    o.person = customer
+    o.status = 'pending'
+    o.total_amount = rand(100.0..500.0).round(2)
+    o.order_date = Date.current
+    o.notes = "Second pending order for #{customer.first_name}"
+  end
+
+  # Other Status Order (Confirmed or Shipped)
+  random_status = [ 'confirmed', 'shipped' ].sample
+  Order.find_or_create_by!(number: "ORD-#{customer.first_name.upcase}-S3") do |o|
+    o.person = customer
+    o.status = random_status
+    o.total_amount = rand(100.0..500.0).round(2)
+    o.order_date = Date.yesterday
+    o.notes = "A #{random_status} order for #{customer.first_name}"
+  end
 end
 
-# Create second person
-person2 = Person.find_or_create_by!(email: 'jane.smith@example.com') do |person|
-  person.first_name = 'Jane'
-  person.last_name = 'Smith'
-  person.password = 'password123'
-  person.password_confirmation = 'password123'
-end
-
-Order.find_or_create_by!(person: person1, number: "ORD-#{Time.current.strftime('%Y%m%d')}-#{SecureRandom.hex(3).upcase}") do |order|
-  order.status = 'pending'
-  order.total_amount = 150.00
-  order.order_date = Date.current
-  order.notes = 'First pending order for John Doe'
-end
-
-Order.find_or_create_by!(person: person2, number: "ORD-#{Time.current.strftime('%Y%m%d')}-#{SecureRandom.hex(3).upcase}") do |order|
-  order.status = 'pending'
-  order.total_amount = 250.00
-  order.order_date = Date.current
-  order.notes = 'First pending order for Jane Smith'
-end
+puts "Seed finished! Total orders: #{Order.count}"
