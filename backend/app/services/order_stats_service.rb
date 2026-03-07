@@ -2,6 +2,12 @@ class OrderStatsService
   def self.get_person_stats(person)
     orders = person.orders
 
+    stats_payload(orders)
+  end
+
+  private
+
+  def self.stats_payload(orders)
     {
       total_orders: orders.count,
       orders_today: orders_today_count(orders),
@@ -16,8 +22,6 @@ class OrderStatsService
       average_order_value: average_order_value(orders)
     }
   end
-
-  private
 
   def self.orders_today_count(orders)
     orders.where(created_at: Date.current.all_day).count

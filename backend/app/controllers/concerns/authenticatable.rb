@@ -14,16 +14,9 @@ module Authenticatable
     header = request.headers["Authorization"]
     token = header&.split(" ")&.last
 
-    puts "=== DEBUG AUTH ==="
-    puts "Auth header: #{header}"
-    puts "Token: #{token}"
-    puts "JWT_SECRET_KEY: #{AuthService::SECRET_KEY}"
-    puts "Rails env: #{Rails.env}"
-
     raise AuthService::AuthenticationError unless token
 
     @current_person = AuthService.current_person(token)
-    puts "Current person: #{@current_person}"
     raise AuthService::AuthenticationError unless @current_person
   end
 

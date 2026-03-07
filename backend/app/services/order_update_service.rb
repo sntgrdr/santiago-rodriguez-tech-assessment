@@ -2,13 +2,9 @@ class OrderUpdateService
   class InvalidOrderError < StandardError; end
 
   def self.update_order(order, order_params)
-    # Business logic for order updates
     validate_status_transition(order, order_params[:status]) if order_params[:status]
 
     if order.update(order_params)
-      # Email notification hook for status changes
-      # OrderNotificationService.new(order).send_status_update
-
       order
     else
       raise InvalidOrderError, order.errors.full_messages.join(", ")
