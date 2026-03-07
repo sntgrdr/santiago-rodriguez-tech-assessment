@@ -206,5 +206,33 @@ RSpec.describe Order, type: :model do
         }.not_to have_enqueued_mail(OrderMailer, :confirmation_email)
       end
     end
+
+    describe '#check_if_pending' do
+      let!(:person) { create(:person) }
+
+      context 'when order is pending' do
+        it 'allows the order to be destroyed' do
+          order = create(:order, person: person, status: 'pending')
+          expect { order.destroy }.to change(Order, :count).by(-1)
+        end
+      end
+
+      context 'when order is NOT pending' do
+        let!(:non_pending_order) { create(:order, person: person, status: 'confirmed') }
+
+        it 'does not allow the order to be destroyed' do
+          expect { non_pending_order.destroy }.not_to change(Order, :count)
+        end
+
+        it 'adds the correct error message' do
+          non_pending_order.destroy
+          expect(non_pending_order.errors[:base]).to include("Can't delete not pending order")
+        end
+
+        it 'returns false' do
+          expect(non_pending_order.destroy).to be false
+        end
+      end
+    end
   end
 end

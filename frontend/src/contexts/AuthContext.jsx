@@ -16,9 +16,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check if user is authenticated on mount
   useEffect(() => {
-    let isMounted = true; // Control de montaje
+    let isMounted = true;
 
     const checkAuth = async () => {
       try {
@@ -28,7 +27,6 @@ export const AuthProvider = ({ children }) => {
           if (isMounted) setUser(userData.person);
         }
       } catch (error) {
-        // ... tu lógica de error ...
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -36,7 +34,7 @@ export const AuthProvider = ({ children }) => {
 
     checkAuth();
 
-    return () => { isMounted = false; }; // Se ejecuta al desmontar el test
+    return () => { isMounted = false; };
   }, []);
 
   const login = async (email, password) => {
@@ -61,8 +59,6 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setError(null);
     } catch (error) {
-      console.error('Logout error:', error);
-      // Still logout locally even if API call fails
       setUser(null);
       setError(null);
     } finally {

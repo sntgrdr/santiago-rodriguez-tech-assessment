@@ -7,7 +7,7 @@ const CreateOrderForm = ({ onClose, onOrderCreated }) => {
   const [formData, setFormData] = useState({
     total_amount: '',
     notes: '',
-    order_date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+    order_date: new Date().toISOString().split('T')[0],
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,6 @@ const CreateOrderForm = ({ onClose, onOrderCreated }) => {
       [name]: value
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -63,7 +62,6 @@ const CreateOrderForm = ({ onClose, onOrderCreated }) => {
 
       await api.createOrder(orderData);
 
-      // Reset form
       setFormData({
         total_amount: '',
         notes: '',
@@ -72,12 +70,10 @@ const CreateOrderForm = ({ onClose, onOrderCreated }) => {
 
       setErrors({});
 
-      // Notify parent component
       if (onOrderCreated) {
         onOrderCreated();
       }
 
-      // Close modal
       onClose();
 
     } catch (error) {
