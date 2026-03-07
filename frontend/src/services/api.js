@@ -1,23 +1,10 @@
 const API_BASE_URL = 'http://localhost:3000/api/v1';
 
-// Get token from localStorage
-const getToken = () => {
-  return localStorage.getItem('authToken');
-};
+const getToken = () => localStorage.getItem('authToken');
+const setToken = (token) => localStorage.setItem('authToken', token);
+const removeToken = () => localStorage.removeItem('authToken');
 
-// Set token in localStorage
-const setToken = (token) => {
-  localStorage.setItem('authToken', token);
-};
-
-// Remove token from localStorage
-const removeToken = () => {
-  localStorage.removeItem('authToken');
-};
-
-// Create axios instance with base configuration
 const api = {
-  // Login
   login: async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -41,7 +28,6 @@ const api = {
     }
   },
 
-  // Logout
   logout: async () => {
     try {
       const token = getToken();
@@ -61,7 +47,6 @@ const api = {
     }
   },
 
-  // Get current user
   getCurrentUser: async () => {
     try {
       const token = getToken();
@@ -83,7 +68,6 @@ const api = {
 
       return await response.json();
     } catch (error) {
-      // Only remove token for 401 errors, not network errors
       if (error.message.includes('No token found')) {
         removeToken();
       }
@@ -91,7 +75,6 @@ const api = {
     }
   },
 
-  // Get orders
   getOrders: async () => {
     try {
       const token = getToken();
@@ -114,7 +97,6 @@ const api = {
     }
   },
 
-  // Create order
   createOrder: async (orderData) => {
     try {
       const token = getToken();
@@ -140,7 +122,6 @@ const api = {
     }
   },
 
-  // Get dashboard stats
   getStats: async () => {
     try {
       const token = getToken();
@@ -162,6 +143,56 @@ const api = {
       throw error;
     }
   },
+
+  updateOrder: async (id, orderParams) => {
+    try {
+      const token = getToken();
+      if (!token) throw new Error('No token found');
+
+      const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ order: orderParams }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.errors || 'Failed to update order');
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteOrder: async (id) => {
+    try {
+      const token = getToken();
+      if (!token) throw new Error('No token found');
+
+      const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete order');
+      }
+
+      if (response.status === 204) return true;
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
 };
 
 export default api;

@@ -47,12 +47,46 @@ const DashboardPage = () => {
     fetchOrders();
   }, []);
 
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      setError(null);
+      const updatedOrder = await api.updateOrder(id, { status: newStatus });
+
+      setOrders(prevOrders =>
+        prevOrders.map(order => order.id === id ? { ...order, status: updatedOrder.status } : order)
+      );
+
+      fetchStats();
+      return true;
+    } catch (err) {
+      const message = err.response?.data?.errors || 'Failed to update order status';
+      setError(message);
+      return false;
+    }
+  };
+
+  const handleDeleteOrder = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this order?')) return;
+
+    try {
+      setError(null);
+      await api.deleteOrder(id);
+
+      setOrders(prevOrders => prevOrders.filter(order => order.id !== id));
+
+      fetchStats();
+    } catch (err) {
+      const message = err.response?.data?.error || 'Failed to delete order';
+      setError(message);
+    }
+  };
+
   const handleCreateOrder = () => {
     setShowCreateModal(true);
   };
 
   const handleOrderCreated = () => {
-    // Refresh both stats and orders when a new order is created
+    setShowCreateModal(false);
     fetchStats();
     fetchOrders();
   };
@@ -63,11 +97,11 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardHeader 
+      <DashboardHeader
         onCreateOrder={handleCreateOrder}
         onLogout={handleLogout}
       />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <div className="mb-6 rounded-md bg-red-50 p-4">
@@ -83,22 +117,39 @@ const DashboardPage = () => {
                   {error}
                 </div>
               </div>
+              <div className="ml-auto pl-3">
+                <div className="-mx-1.5 -my-1.5">
+                  <button
+                    onClick={() => setError(null)}
+                    className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100 focus:outline-none"
+                  >
+                    <span className="sr-only">Dismiss</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Stats Grid */}
         <div className="mb-8">
           <StatsGrid stats={stats} loading={statsLoading} />
         </div>
 
-        {/* Orders List */}
         <div>
-          <OrdersList orders={orders} loading={ordersLoading} />
+          <OrdersList
+            orders={orders}
+            loading={ordersLoading}
+            onUpdateStatus={handleUpdateStatus}
+            onDelete={handleDeleteOrder}
+            serverError={error}
+            clearError={() => setError(null)}
+          />
         </div>
       </main>
 
-      {/* Create Order Modal */}
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}

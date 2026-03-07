@@ -20,6 +20,7 @@ class Order < ApplicationRecord
   # Callbacks
   before_validation :set_order_date, on: :create
   before_validation :generate_order_number, on: :create
+  before_destroy :check_if_pending
 
   after_create_commit :send_confirmation_email
 
@@ -43,5 +44,12 @@ class Order < ApplicationRecord
 
   def send_confirmation_email
     OrderMailer.confirmation_email(self).deliver_later
+  end
+
+  def check_if_pending
+    unless pending?
+      errors.add(:base, "Can't delete not pending order")
+      throw(:abort)
+    end
   end
 end
