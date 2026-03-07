@@ -2,10 +2,15 @@ class Api::V1::OrdersController < ApplicationController
   include Authenticatable
 
   before_action :set_order, only: [ :show, :update, :destroy ]
+  before_action :authorize_admin!, only: [ :update, :destroy ]
 
   # GET /api/v1/orders
   def index
-    @orders = current_person.orders.recent.includes(:person)
+    @orders = if current_person.admin?
+              Order.all.includes(:person)
+    else
+              current_person.orders
+    end
     render json: @orders.as_json(include: :person)
   end
 
@@ -45,9 +50,12 @@ class Api::V1::OrdersController < ApplicationController
   private
 
   def set_order
-    @order = current_person.orders.find(params[:id])
-  rescue ActiveRecord::RecordNotFound
-    render json: { error: "Order not found" }, status: :not_found
+    @order = if current_person.admin?
+               Order.find_by(id: params[:id])
+    else
+               current_person.orders.find_by(id: params[:id])
+    end
+    render json: { error: "Order not found" }, status: :not_found unless @order
   end
 
   def order_creation_params
@@ -56,5 +64,11 @@ class Api::V1::OrdersController < ApplicationController
 
   def order_update_params
     params.require(:order).permit(:status, :total_amount, :notes, :order_date)
+  end
+
+  def authorize_admin!
+    unless current_person.admin?
+      render json: { error: "Not authorized. Admins only." }, status: :forbidden
+    end
   end
 end

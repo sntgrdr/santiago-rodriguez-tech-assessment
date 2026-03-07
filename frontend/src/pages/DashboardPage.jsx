@@ -8,7 +8,7 @@ import Modal from '../components/ui/Modal';
 import CreateOrderForm from '../components/orders/CreateOrderForm';
 
 const DashboardPage = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [stats, setStats] = useState({});
   const [orders, setOrders] = useState([]);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -145,6 +145,7 @@ const DashboardPage = () => {
             onUpdateStatus={handleUpdateStatus}
             onDelete={handleDeleteOrder}
             serverError={error}
+            currentUser={user}
             clearError={() => setError(null)}
           />
         </div>

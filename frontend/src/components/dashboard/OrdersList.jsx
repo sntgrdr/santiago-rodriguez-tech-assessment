@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardBody } from '../ui/Card';
 import EditOrderStatus from './EditOrderStatus';
 
-const OrdersList = ({ orders, loading, onUpdateStatus, onDelete, serverError, clearError }) => {
+const OrdersList = ({ orders, loading, onUpdateStatus, onDelete, serverError, clearError, currentUser }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const isAdmin = currentUser?.role === 'admin';
 
   const handleOpenEdit = (order) => {
     setSelectedOrder(order);
@@ -141,7 +142,12 @@ const OrdersList = ({ orders, loading, onUpdateStatus, onDelete, serverError, cl
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
                         onClick={() => handleOpenEdit(order)}
-                        className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-1.5 rounded-md transition-colors"
+                        disabled={!isAdmin}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          isAdmin
+                          ? 'text-indigo-600 hover:text-indigo-900 bg-indigo-50'
+                          : 'text-gray-300 bg-gray-50 cursor-not-allowed'
+                        }`}
                         title="Edit Order Status"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -151,13 +157,13 @@ const OrdersList = ({ orders, loading, onUpdateStatus, onDelete, serverError, cl
 
                       <button
                         onClick={() => onDelete(order.id)}
-                        disabled={order.status !== 'pending'}
+                        disabled={!isAdmin || (isAdmin && order.status !== 'pending')}
                         className={`p-1.5 rounded-md transition-colors ${
-                          order.status === 'pending'
+                          order.status === 'pending' && isAdmin
                           ? 'text-red-600 hover:text-red-900 bg-red-50'
                           : 'text-gray-300 bg-gray-50 cursor-not-allowed'
                         }`}
-                        title={order.status === 'pending' ? "Delete Order" : "Only pending orders can be deleted"}
+                        title={order.status === 'pending' && isAdmin ? "Delete Order" : "Only pending orders can be deleted"}
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

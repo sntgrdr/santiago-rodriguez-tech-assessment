@@ -6,7 +6,7 @@ class Api::V1::AuthController < ApplicationController
     token = AuthService.generate_token(person.id)
 
     render json: {
-      person: person.as_json(only: [ :id, :email, :first_name, :last_name ]),
+      person: person.as_json(only: [ :id, :email, :first_name, :last_name, :role ]),
       token: token
     }, status: :ok
   rescue AuthService::AuthenticationError => e
@@ -19,7 +19,7 @@ class Api::V1::AuthController < ApplicationController
 
   def current_user
     render json: {
-      person: current_person.as_json(only: [ :id, :email, :first_name, :last_name ])
+      person: current_person.as_json(only: [ :id, :email, :first_name, :last_name, :role ])
     }
   end
 end
